@@ -30,12 +30,23 @@ def cfg():
     return c
 
 def host_image(path):
-    """upload a local image to a free host, return a public direct URL the API can fetch."""
+    """upload a local image to a free host, return a public direct URL the API can fetch.
+    UA header (hosts block default python-requests UA -> 412) + 0x0.st fallback for reliability from CI (GitHub Actions)."""
     path = Path(path)
+    UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
+    # try catbox
+    try:
+        with open(path, "rb") as f:
+            r = requests.post("https://catbox.moe/user/api.php", data={"reqtype": "fileupload"},
+                              files={"fileToUpload": (path.name, f)}, headers=UA, timeout=120)
+        u = r.text.strip()
+        if r.ok and u.startswith("http"):
+            return u
+    except Exception:
+        pass
+    # fallback: 0x0.st (reliable from datacenter IPs, needs a real UA)
     with open(path, "rb") as f:
-        r = requests.post("https://catbox.moe/user/api.php",
-                          data={"reqtype": "fileupload"},
-                          files={"fileToUpload": (path.name, f)}, timeout=120)
+        r = requests.post("https://0x0.st", files={"file": (path.name, f)}, headers=UA, timeout=120)
     r.raise_for_status()
     url = r.text.strip()
     if not url.startswith("http"):
