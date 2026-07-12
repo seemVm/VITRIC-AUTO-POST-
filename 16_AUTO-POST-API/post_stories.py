@@ -24,8 +24,18 @@ def main():
     frames = sorted([p for p in folder.glob("*.png") if p.name[0].isdigit()]) or sorted(folder.glob("*.png"))
     if not frames:
         sys.exit(f"no story frames in {folder}")
+    # In CI (GitHub Actions): serve frames from GitHub's raw CDN (bulletproof) instead of a flaky free host.
+    # Requires the repo to be PUBLIC so Meta can fetch the raw URLs. The token stays a secret regardless.
+    import os
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    branch = os.environ.get("GITHUB_REF_NAME", "main")
+    if repo:
+        targets = [f"https://raw.githubusercontent.com/{repo}/{branch}/{f.as_posix()}" for f in frames]
+        print(f"CI mode: serving {len(targets)} frames from GitHub raw CDN")
+    else:
+        targets = [str(f) for f in frames]
     print(f"posting {len(frames)} story frames from {folder.name} -> IG story...")
-    ids = insta_poster.post_story([str(f) for f in frames])
+    ids = insta_poster.post_story(targets)
     print(f"DONE: posted {len(ids)}/{len(frames)} story frames")
 
 if __name__ == "__main__":

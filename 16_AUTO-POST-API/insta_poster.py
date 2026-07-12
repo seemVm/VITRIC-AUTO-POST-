@@ -30,8 +30,10 @@ def cfg():
     return c
 
 def host_image(path):
-    """upload a local image to a free host, return a public direct URL the API can fetch.
-    UA header (hosts block default python-requests UA -> 412) + 0x0.st fallback for reliability from CI (GitHub Actions)."""
+    """return a public direct URL the API can fetch. If given a URL already (e.g. a GitHub raw URL from CI), pass it through.
+    Otherwise upload to a free host (UA header + 0x0.st fallback)."""
+    if str(path).startswith(("http://", "https://")):
+        return str(path)  # already a public URL (GitHub raw) - nothing to host
     path = Path(path)
     UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
     # try catbox
