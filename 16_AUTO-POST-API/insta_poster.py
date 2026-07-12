@@ -73,10 +73,18 @@ def _create(ig, token, **params):
     return r["id"]
 
 def _publish(ig, token, creation_id):
-    r = requests.post(f"{BASE}/{ig}/media_publish",
-                      data={"creation_id": creation_id, "access_token": token}, timeout=60).json()
-    if "id" not in r: raise RuntimeError(f"publish failed: {r}")
-    return r["id"]
+    # retry on 9007 "media not ready" (container still processing) - wait + retry up to ~60s
+    last = None
+    for _ in range(12):
+        r = requests.post(f"{BASE}/{ig}/media_publish",
+                          data={"creation_id": creation_id, "access_token": token}, timeout=60).json()
+        if "id" in r:
+            return r["id"]
+        last = r; err = r.get("error", {})
+        if err.get("code") == 9007 or err.get("error_subcode") == 2207027 or err.get("is_transient"):
+            time.sleep(5); continue
+        raise RuntimeError(f"publish failed: {r}")
+    raise RuntimeError(f"publish failed after retries (media never ready): {last}")
 
 def post_photo(caption, image, c=None):
     c = c or cfg(); ig, tok = c["ig_user_id"], c["access_token"]
