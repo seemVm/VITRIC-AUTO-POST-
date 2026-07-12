@@ -1,0 +1,27 @@
+name: story-autopost
+on:
+  schedule:
+    - cron: '0 13 * * *'
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+jobs:
+  post-stories:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install requests pillow
+      - name: write IG config from secrets
+        run: |
+          mkdir -p 16_AUTO-POST-API
+          printf '{"ig_user_id":"%s","access_token":"%s"}' "${{ secrets.IG_USER_ID }}" "${{ secrets.IG_TOKEN }}" > 16_AUTO-POST-API/config.json
+      - name: post today's story folder
+        run: |
+          DAY="$(date -u +%u)_$(date -u +%a | tr '[:lower:]' '[:upper:]')"
+          FOLDER="09_STORY-SEQUENCES/story-week/$DAY"
+          if [ -d "$FOLDER" ]; then
+            python 16_AUTO-POST-API/post_stories.py "$FOLDER"
+          else
+            echo "no folder for $DAY today"
+          fi
