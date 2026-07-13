@@ -86,6 +86,17 @@ def _publish(ig, token, creation_id):
         raise RuntimeError(f"publish failed: {r}")
     raise RuntimeError(f"publish failed after retries (media never ready): {last}")
 
+def post_reel(caption, video, c=None, share_to_feed=True):
+    """post a REEL via the same free API. video = local path (hosted) or a public http(s) url
+    (in CI we pass the GitHub raw CDN url). video processing is slower than images -> long waits."""
+    c = c or cfg(); ig, tok = c["ig_user_id"], c["access_token"]
+    url = video if str(video).startswith(("http://", "https://")) else host_image(video)
+    print(f"  hosted -> {url}")
+    cid = _create(ig, tok, media_type="REELS", video_url=url, caption=caption or "",
+                  share_to_feed="true" if share_to_feed else "false")
+    _wait_ready(cid, tok, tries=60)          # video transcode can take a few minutes
+    mid = _publish(ig, tok, cid); print(f"  PUBLISHED reel id={mid}"); return mid
+
 def post_photo(caption, image, c=None):
     c = c or cfg(); ig, tok = c["ig_user_id"], c["access_token"]
     url = host_image(image); print(f"  hosted -> {url}")
@@ -121,12 +132,14 @@ def post_carousel(caption, images, c=None):
 if __name__ == "__main__":
     if len(sys.argv) < 3: sys.exit(__doc__)
     mode = sys.argv[1]
-    if mode == "story":
+    if mode == "reel":
+        post_reel(sys.argv[2], sys.argv[3])
+    elif mode == "story":
         post_story(sys.argv[2:])
     elif mode == "carousel":
         post_carousel(sys.argv[2], sys.argv[3:])
     elif mode == "photo":
         post_photo(sys.argv[2], sys.argv[3])
     else:
-        sys.exit(f"unknown mode '{mode}' - use story | carousel | photo")
+        sys.exit(f"unknown mode '{mode}' - use reel | story | carousel | photo")
     print("done.")

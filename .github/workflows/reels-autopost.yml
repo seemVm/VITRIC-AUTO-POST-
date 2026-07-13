@@ -1,0 +1,34 @@
+name: reels-autopost
+# 2 reels/day per the posting law: 10:00 + 18:00 ET. Cron is UTC (EDT = UTC-4):
+# 14:00 UTC = 10am ET, 22:00 UTC = 6pm ET. (Shift to 15:00/23:00 when EST returns in Nov.)
+on:
+  schedule:
+    - cron: "0 14 * * *"
+    - cron: "0 22 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: build config from secrets
+        run: |
+          echo "{\"ig_user_id\": \"${{ secrets.IG_USER_ID }}\", \"access_token\": \"${{ secrets.IG_TOKEN }}\"}" > 16_AUTO-POST-API/config.json
+      - name: post due reel
+        run: python 16_AUTO-POST-API/post_reels_queue.py
+      - name: commit posted-move (dedup)
+        run: |
+          rm -f 16_AUTO-POST-API/config.json
+          git config user.name "vitric-bot"
+          git config user.email "bot@vitricmedia.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "reel posted $(date -u +%F_%H%M)"
+          git push
