@@ -1,9 +1,16 @@
 name: story-autopost
+# 9am ET batch (13:00 UTC) posts the FIRST HALF of the day's frames; 1pm ET (17:00 UTC)
+# posts the REST. A committed .posted marker per slot makes every run idempotent:
+# a delayed, retried, or manually-dispatched run can never duplicate frames.
 on:
   schedule:
     - cron: '0 13 * * *'
     - cron: '0 17 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   post-stories:
     runs-on: ubuntu-latest
@@ -16,12 +23,25 @@ jobs:
         run: |
           mkdir -p 16_AUTO-POST-API
           printf '{"ig_user_id":"%s","access_token":"%s"}' "${{ secrets.IG_USER_ID }}" "${{ secrets.IG_TOKEN }}" > 16_AUTO-POST-API/config.json
-      - name: post today's story folder
+      - name: post today's story batch (am/pm slot)
         run: |
           DAY="$(date -u +%u)_$(date -u +%a | tr '[:lower:]' '[:upper:]')"
+          if [ "$(date -u +%H)" -lt 15 ]; then SLOT=am; else SLOT=pm; fi
           FOLDER="09_STORY-SEQUENCES/story-week/$DAY"
+          echo "day=$DAY slot=$SLOT"
           if [ -d "$FOLDER" ]; then
-            python 16_AUTO-POST-API/post_stories.py "$FOLDER"
+            python 16_AUTO-POST-API/post_stories.py "$FOLDER" --slot "$SLOT"
           else
             echo "no folder for $DAY today"
+          fi
+      - name: commit the posted marker (the dedup memory)
+        run: |
+          rm -f 16_AUTO-POST-API/config.json
+          git config user.name "vitric-bot"
+          git config user.email "bot@vitricmedia.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git pull --rebase --autostash
+            git commit -m "story slot posted $(date -u +%F_%H%M)"
+            git push
           fi

@@ -24,6 +24,27 @@ def main():
     frames = sorted([p for p in folder.glob("*.png") if p.name[0].isdigit()]) or sorted(folder.glob("*.png"))
     if not frames:
         sys.exit(f"no story frames in {folder}")
+
+    # --slot am|pm  ->  split the day per the story doctrine (spaced batches) AND kill dupes:
+    # am = first half of the frames, pm = the rest. A committed .posted marker makes each
+    # slot idempotent, so a re-run/double-fire can NEVER post the same frames twice.
+    import datetime
+    slot = None
+    if "--slot" in sys.argv:
+        slot = sys.argv[sys.argv.index("--slot") + 1]
+    if slot in ("am", "pm"):
+        marker = folder / f".posted_{datetime.date.today():%Y-%m-%d}_{slot}"
+        if marker.exists():
+            print(f"slot {slot} already posted today ({marker.name}) - skipping, no dupes.")
+            return
+        half = (len(frames) + 1) // 2
+        frames = frames[:half] if slot == "am" else frames[half:]
+        if not frames:
+            print(f"nothing left for the {slot} slot - done.")
+            marker.write_text("posted")
+            return
+        marker.write_text("posted")   # workflow commits this = permanent dedup
+
     # In CI (GitHub Actions): serve frames from GitHub's raw CDN (bulletproof) instead of a flaky free host.
     # Requires the repo to be PUBLIC so Meta can fetch the raw URLs. The token stays a secret regardless.
     import os
