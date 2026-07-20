@@ -1,0 +1,67 @@
+{
+  "1_MON": {
+    "frames": [
+      "01_hook.png",
+      "02_value.png",
+      "03_proof.png",
+      "04_dmprompt.png",
+      "05_cta.png"
+    ]
+  },
+  "2_TUE": {
+    "frames": [
+      "01_hook.png",
+      "02_value.png",
+      "03_proof.png",
+      "04_dmprompt.png",
+      "05_cta.png"
+    ]
+  },
+  "3_WED": {
+    "frames": [
+      "01_wed.png",
+      "02_wed.png",
+      "03_wed.png",
+      "04_wed.png",
+      "05_wed.png",
+      "06_wed.png",
+      "07_wed.png"
+    ]
+  },
+  "4_THU": {
+    "frames": [
+      "01_hook.png",
+      "02_value.png",
+      "03_proof.png",
+      "04_dmprompt.png",
+      "05_cta.png"
+    ]
+  },
+  "5_FRI": {
+    "frames": [
+      "01_hook.png",
+      "02_value.png",
+      "03_proof.png",
+      "04_dmprompt.png",
+      "05_cta.png"
+    ]
+  },
+  "6_SAT": {
+    "frames": [
+      "01_hook.png",
+      "02_value.png",
+      "03_proof.png",
+      "04_dmprompt.png",
+      "05_cta.png"
+    ]
+  },
+  "7_SUN": {
+    "frames": [
+      "01_hook.png",
+      "02_value.png",
+      "03_proof.png",
+      "04_dmprompt.png",
+      "05_cta.png"
+    ]
+  }
+}

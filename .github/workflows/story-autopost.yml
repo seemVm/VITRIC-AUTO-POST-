@@ -26,11 +26,10 @@ jobs:
       - name: post today's story batch (am/pm slot)
         run: |
           DAY="$(date -u +%u)_$(date -u +%a | tr '[:lower:]' '[:upper:]')"
-          if [ "$(date -u +%H)" -lt 15 ]; then SLOT=am; else SLOT=pm; fi
           FOLDER="09_STORY-SEQUENCES/story-week/$DAY"
-          echo "day=$DAY slot=$SLOT"
+          echo "day=$DAY slot=auto (markers pick the slot - GitHub crons fire late, wall-clock lies)"
           if [ -d "$FOLDER" ]; then
-            python 16_AUTO-POST-API/post_stories.py "$FOLDER" --slot "$SLOT"
+            python 16_AUTO-POST-API/post_stories.py "$FOLDER" --slot auto
           else
             echo "no folder for $DAY today"
           fi

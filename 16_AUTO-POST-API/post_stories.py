@@ -25,13 +25,25 @@ def main():
     if not frames:
         sys.exit(f"no story frames in {folder}")
 
-    # --slot am|pm  ->  split the day per the story doctrine (spaced batches) AND kill dupes:
+    # --slot am|pm|auto  ->  split the day per the story doctrine (spaced batches) AND kill dupes:
     # am = first half of the frames, pm = the rest. A committed .posted marker makes each
     # slot idempotent, so a re-run/double-fire can NEVER post the same frames twice.
+    # "auto" posts whichever half is still unposted today (am first). This exists because GitHub
+    # crons fire late: on 2026-07-20 the 9am run woke at 11:07 ET, wall-clock said pm, and the day
+    # posted its CTA half with no hook/value/proof in front of it. Markers, not clocks, pick the slot.
     import datetime
     slot = None
     if "--slot" in sys.argv:
         slot = sys.argv[sys.argv.index("--slot") + 1]
+    if slot == "auto":
+        today = f"{datetime.date.today():%Y-%m-%d}"
+        if not (folder / f".posted_{today}_am").exists():
+            slot = "am"
+        elif not (folder / f".posted_{today}_pm").exists():
+            slot = "pm"
+        else:
+            print("both slots already posted today - skipping, no dupes.")
+            return
     if slot in ("am", "pm"):
         marker = folder / f".posted_{datetime.date.today():%Y-%m-%d}_{slot}"
         if marker.exists():
